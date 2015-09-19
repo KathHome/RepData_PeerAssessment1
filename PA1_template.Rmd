@@ -7,19 +7,62 @@ output:
 
 
 ## Loading and preprocessing the data
+# Read source file into memory (17568 rows)
+activity_file <- read.csv("activity.csv")
 
+# Remote NAs from dataset (15264 rows)
+cleaned_activity_file <- na.omit(activity_file)
 
 
 ## What is mean total number of steps taken per day?
+# Calculate the total number of steps per day.
+total_steps_per_day <- summarise(group_by(cleaned_activity_file, date), total_steps = sum(steps))
 
+# Calculate mean of total steps per day. (10766.19)
+mean_total_steps_per_day <- mean(total_steps_per_day$total_steps)
+#mean_total_steps_per_day  <- round(mean_total_steps_per_day,2)
+
+# Calculate median of total steps per day. (10765)
+median_total_steps_per_day <- median(total_steps_per_day$total_steps)
+
+# Plot histogram of total steps per day.
+with(total_steps_per_day, hist(total_steps, main = "Histogram of Total Steps per Day", xlab = "Total Steps per Day", col = "light green"))
 
 
 ## What is the average daily activity pattern?
+# Calculate the average number of steps per day.
+mean_total_steps_per_interval <- summarise(group_by(cleaned_activity_file, interval), average_steps = mean(steps))
 
+# Return the highest average interval by ordering average time and extracting the interval - 08:35
+highest_interval <- paste("0", head(mean_total_steps_per_interval[order(mean_total_steps_per_interval$average_steps, decreasing = TRUE),], 1)$interval, sep="")
+
+with(mean_total_steps_per_interval, plot(interval, average_steps, type = "l", col="green", main = "Average Daily Activity Pattern", xlab = "Hours of the Day", ylab = "Average steps across all days"))
+axis(side=1, at=seq(0, 2355, by=500))
 
 
 ## Imputing missing values
+# Count the number of rows with NA values in them: 2304
+observations_with_nas <- sum(!complete.cases(activity_file))
 
+# Replace any NA values with the mean value for that interval, rounded to the nearest step.
+imputed_activity_file <- activity_file
+for(i in 1:nrow(activity_file)) {
+    if(is.na(activity_file[i,]$steps)){ 
+        imputed_activity_file[i,]$steps <- as.integer(round(subset(mean_total_steps_per_interval, select = c(average_steps), interval == activity_file[i,]$interval), digits = 0) )}
+}
+
+# Calculate the total number of imputed steps per day.
+total_imputed_steps_per_day <- summarise(group_by(imputed_activity_file, date), total_steps = sum(steps))
+
+
+# Calculate mean of total imputed steps per day. (10765.64)
+mean_total_imputed_steps_per_day <- mean(total_imputed_steps_per_day$total_steps)
+
+# Calculate median of total imputed steps per day. (10762)
+median_total_imputed_steps_per_day <- median(total_imputed_steps_per_day$total_steps)
+
+# Plot histogram of total imputed steps per day.
+with(total_imputed_steps_per_day, hist(total_steps, main = "Histogram of Total Imputed Steps per Day", xlab = "Total Imputed Steps per Day", col = "light green"))
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
